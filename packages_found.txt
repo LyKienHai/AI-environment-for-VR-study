@@ -1,0 +1,19 @@
+Checking where gradio is installed... 
+ 
+VENV site-packages: 
+ 
+User Python311 site-packages: 
+requests
+requests-2.32.3.dist-info
+ 
+Anaconda base site-packages: 
+requests
+requests-2.32.3.dist-info
+requests_file-1.5.1.dist-info
+requests_file.py
+requests_toolbelt
+requests_toolbelt-1.0.0.dist-info
+urllib3
+urllib3-2.2.3.dist-info
+ 
+Bug-detection env site-packages: 

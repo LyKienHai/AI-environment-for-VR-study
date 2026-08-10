@@ -1,0 +1,16 @@
+Searching for Python with gradio... 
+Found: "C:\Users\Van\anaconda3\python.exe" 
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'gradio'
+Found: "C:\Users\Van\Anaconda3\python.exe" 
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'gradio'
+Found: "E:\ai_generator\ai_generator\venv\Scripts\python.exe" 
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'gradio'
+ 
+All pythons in PATH: 
+C:\Users\Van\anaconda3\python.exe

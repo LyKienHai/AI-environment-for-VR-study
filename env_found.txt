@@ -1,0 +1,7 @@
+Checking conda environments for gradio... 
+ 
+ENV: C:\Users\Van\anaconda3\envs\bug-detection 
+  File "<string>", line 1
+    import gradio; print('  gradio OK in C:\Users\Van\anaconda3\envs\bug-detection')
+                                                                                   ^
+SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 17-18: truncated \UXXXXXXXX escape

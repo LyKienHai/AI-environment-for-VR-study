@@ -1,0 +1,13 @@
+=== Python Launcher (py -0) === 
+ -V:3.10 *        Python 3.10 (64-bit)
+ 
+=== Python Launcher paths === 
+ -V:3.10 *        E:\Python\python.exe
+ 
+=== Checking known Python locations === 
+ 
+=== IDLE locations (to trace Python install) === 
+C:\Users\Van\anaconda3\Scripts\idle.exe
+INFO: Could not find files for the given pattern(s).
+C:\Windows\py.exe
+INFO: Could not find files for the given pattern(s).
