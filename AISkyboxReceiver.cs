@@ -15,7 +15,9 @@ public class AISkyboxReceiver : MonoBehaviour
     private Material _skyboxMat;
     private FileSystemWatcher _watcher;
     private bool _pendingUpdate = false;
+#pragma warning disable 0414
     private float _lastModified = 0f;
+#pragma warning restore 0414
 
     void Start()
     {

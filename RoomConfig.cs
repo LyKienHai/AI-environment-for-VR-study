@@ -24,7 +24,7 @@ public static class RoomConfig
     /// Must contain: wall_front.png, wall_back.png, wall_left.png,
     ///               wall_right.png, floor.png, ceiling.png
     /// </summary>
-    public static string OutputFolder = @"E:\ai_generator\output";
+    public static string OutputFolder = "";
 
     // =====================================================================
     //  ROOM DIMENSIONS  (1 Unity unit = 1 real-world meter)

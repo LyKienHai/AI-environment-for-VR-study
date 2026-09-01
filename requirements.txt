@@ -1,0 +1,27 @@
+# AI_HDRI_Unity — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# Web UI
+gradio>=4.0.0
+
+# API server (Whisper endpoint)
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+
+# Speech recognition
+openai-whisper>=20231117
+
+# Deep learning (whisper dependency)
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# Audio / image processing
+soundfile>=0.12.1
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# HTTP requests (image quiz downloads)
+requests>=2.31.0
+
+# Utilities
+python-multipart>=0.0.6

@@ -74,15 +74,22 @@ public static class GameBootstrap
 
         // Attach script — values must be set BEFORE Start() runs
         AIRoomBox room = roomObj.AddComponent<AIRoomBox>();
-        room.outputFolder = RoomConfig.OutputFolder;
-        room.floorSize    = RoomConfig.FloorSize;
-        room.wallHeight   = RoomConfig.WallHeight;
-        room.debugColors  = RoomConfig.DebugColors;
+        room.floorSize  = RoomConfig.FloorSize;
+        room.wallHeight = RoomConfig.WallHeight;
+
+        // Attach config loader — must run before RoomAutoLoader so _loader ref is valid
+        RoomConfigLoader loader = roomObj.AddComponent<RoomConfigLoader>();
+        loader.outputFolder   = RoomConfig.OutputFolder;
+        loader.configFileName = "room_config.json";
+
+        // Attach auto-reloader — watches room_config.json and hot-reloads colours
+        RoomAutoLoader autoLoader = roomObj.AddComponent<RoomAutoLoader>();
+        autoLoader.outputFolder   = RoomConfig.OutputFolder;
+        autoLoader.configFileName = "room_config.json";
 
         UnityEngine.Debug.Log(
             $"[GameBootstrap] AIRoomBox created at origin. " +
             $"Size={room.floorSize}x{room.wallHeight}  " +
-            $"DebugColors={room.debugColors}  " +
-            $"Folder={room.outputFolder}");
+            $"Folder={RoomConfig.OutputFolder}");
     }
 }

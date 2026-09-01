@@ -1,0 +1,81 @@
+{
+  "room_type": "Arztpraxis",
+  "mode": "builder",
+  "palette": {
+    "wall": "#F5C8CC",
+    "ceiling": "#F8D0D5",
+    "floor": "#8B4550"
+  },
+  "objects": {
+    "corner1": {
+      "type": "flower_pot",
+      "german": "der Blumentopf",
+      "english": "flower pot"
+    },
+    "corner2": {
+      "type": "plant",
+      "german": "die Zimmerpflanze",
+      "english": "plant"
+    },
+    "corner3": {
+      "type": "water_cooler",
+      "german": "der Wasserspender",
+      "english": "water cooler"
+    },
+    "corner4": {
+      "type": "trash_bin",
+      "german": "der Mülleimer",
+      "english": "bin"
+    },
+    "table": {
+      "german": "der Tisch",
+      "english": "table"
+    },
+    "chair_doctor": {
+      "german": "der Arztstuhl",
+      "english": "doctor's chair"
+    },
+    "chair_patient": {
+      "german": "der Patientenstuhl",
+      "english": "patient's chair"
+    },
+    "door": {
+      "german": "die Tür",
+      "english": "door"
+    }
+  },
+  "npc": {
+    "name": "Dr. Fischer",
+    "role": "Hausarzt",
+    "context": "Du bist Dr. Fischer in Deutschland. Du hilfst Einwanderern, medizinisches Deutsch zu lernen."
+  },
+  "lesson": {
+    "topic": "",
+    "phrases": [
+      {
+        "de": "Ich habe Kopfschmerzen.",
+        "en": "I have a headache."
+      },
+      {
+        "de": "Die Symptome sind besorgniserregend",
+        "en": "The symptoms are alarming"
+      },
+      {
+        "de": "Ein Schlaganfall ist ein ernstes Risiko",
+        "en": "A stroke is a serious risk"
+      },
+      {
+        "de": "Vorsorge durchaus empfohlen",
+        "en": "Prevention is strongly advised"
+      },
+      {
+        "de": "Medikamente zur Verfügung",
+        "en": "Medicines are available"
+      },
+      {
+        "de": "Sollten Sie Symptome haben, wenden Sie sich an mich",
+        "en": "If you have symptoms, please consult me"
+      }
+    ]
+  }
+}

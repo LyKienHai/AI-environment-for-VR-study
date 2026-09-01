@@ -1,25 +1,12 @@
-using System.IO;
 using UnityEngine;
 
 /// <summary>
-/// AIRoomBox — builds a 6-sided room (4 walls + floor + ceiling) and textures
-/// each face from a separate AI-generated image. Camera stands in the middle.
-///
-/// Expects these 6 files in outputFolder:
-///   wall_front.png, wall_back.png, wall_left.png, wall_right.png,
-///   floor.png, ceiling.png
-///
-/// SETUP:
-///   1. Create an empty GameObject, name it "AIRoomBox"
-///   2. Attach this script to it — keep it at position (0,0,0)
-///   3. Put VRMouseLook.cs on Main Camera, position camera at (0,0,0)
-///   4. Run Play — room builds automatically and loads images
+/// AIRoomBox — builds a 6-sided room (4 walls + floor + ceiling) with solid
+/// palette colors from room_config.json. Thin black cube strips run along all
+/// 12 room edges so each face is clearly separated from any camera angle.
 /// </summary>
 public class AIRoomBox : MonoBehaviour
 {
-    [Header("Output Folder (must match Python OUTPUT_DIR)")]
-    public string outputFolder = @"E:\ai_generator\output";
-
     [Header("Room Size (1 Unity unit = 1 meter)")]
     [Tooltip("Floor width and depth in meters.")]
     public float floorSize = 10f;
@@ -27,57 +14,38 @@ public class AIRoomBox : MonoBehaviour
     [Tooltip("Wall height in meters. Camera sits at Y=0 (mid-height).")]
     public float wallHeight = 5f;
 
-    [Header("Debug")]
-    [Tooltip("Show solid colors instead of AI textures (for geometry testing)")]
-    public bool debugColors = false;
+    [Header("Edge Lines")]
+    [Tooltip("Thickness of the black edge strips between faces (meters).")]
+    public float edgeLineWidth = 0.05f;
 
     // face order: front, back, left, right, floor, ceiling
-    private static readonly string[] FaceFiles   = { "wall_front", "wall_back", "wall_left", "wall_right", "floor", "ceiling" };
-    private static readonly string[] FaceLabels  = { "Front Wall", "Back Wall", "Left Wall", "Right Wall", "Floor", "Ceiling" };
-    private static readonly Color[]  DebugColors = {
-        Color.red,      // front  wall
-        Color.blue,     // back   wall
-        Color.green,    // left   wall
-        Color.yellow,   // right  wall
-        new Color(1f, 0.5f, 0f),   // floor  (orange)
-        Color.cyan,     // ceiling
-    };
+    private static readonly string[] FaceLabels =
+        { "Front Wall", "Back Wall", "Left Wall", "Right Wall", "Floor", "Ceiling" };
 
     private GameObject[] _faceObjects = new GameObject[6];
-    private FileSystemWatcher _watcher;
-    private bool _pendingUpdate = false;
+
+    // ── lifecycle ─────────────────────────────────────────────────────────────
 
     void Start()
     {
         BuildRoom();
-        if (!debugColors)
-            LoadAllTextures();
-        StartWatcher();
-        Debug.Log($"[AIRoomBox] Room built. floorSize={floorSize} wallHeight={wallHeight}. Watching {outputFolder}");
-    }
+        BuildEdgeLines();   // black cube strips along all 12 edges
 
-    void Update()
-    {
-        if (_pendingUpdate)
-        {
-            _pendingUpdate = false;
-            Invoke(nameof(LoadAllTextures), 1.0f);
-        }
-    }
+        if (RoomConfigLoader.Instance != null && RoomConfigLoader.Instance.HasConfig)
+            ApplyPaletteColors();
+        else
+            Debug.Log("[AIRoomBox] No config yet — walls white. Hot-reload applies colors when room_config.json is saved.");
 
-    void OnDestroy()
-    {
-        _watcher?.Dispose();
+        Debug.Log($"[AIRoomBox] Room built. floorSize={floorSize} wallHeight={wallHeight}");
     }
 
     // ── geometry ──────────────────────────────────────────────────────────────
 
     void BuildRoom()
     {
-        float hf = floorSize  / 2f;   // half floor size  (e.g. 5 for 10m room)
-        float hw = wallHeight / 2f;   // half wall height (e.g. 2.5 for 5m walls)
+        float hf = floorSize  / 2f;
+        float hw = wallHeight / 2f;
 
-        // All positions are LOCAL (relative to this GameObject at 0,0,0)
         Vector3[] positions =
         {
             new Vector3( 0,  0,  hf),   // front  wall  +Z
@@ -88,18 +56,16 @@ public class AIRoomBox : MonoBehaviour
             new Vector3( 0,  hw,   0),  // ceiling      +Y
         };
 
-        // Rotations so the INWARD face of each quad points toward the room center
         Vector3[] rotations =
         {
-            new Vector3(  0, 180, 0),   // front  wall — normal points -Z (toward camera)
-            new Vector3(  0,   0, 0),   // back   wall — normal points +Z
-            new Vector3(  0,  90, 0),   // left   wall — normal points +X
-            new Vector3(  0, -90, 0),   // right  wall — normal points -X
-            new Vector3(-90,   0, 0),   // floor  — normal points +Y (up toward camera)
-            new Vector3( 90,   0, 0),   // ceiling — normal points -Y (down toward camera)
+            new Vector3(  0, 180, 0),   // front  — normal -Z
+            new Vector3(  0,   0, 0),   // back   — normal +Z
+            new Vector3(  0,  90, 0),   // left   — normal +X
+            new Vector3(  0, -90, 0),   // right  — normal -X
+            new Vector3(-90,   0, 0),   // floor  — normal +Y
+            new Vector3( 90,   0, 0),   // ceiling — normal -Y
         };
 
-        // walls: floorSize wide × wallHeight tall | floor/ceiling: floorSize × floorSize
         Vector3[] scales =
         {
             new Vector3(floorSize, wallHeight, 1f),
@@ -115,11 +81,7 @@ public class AIRoomBox : MonoBehaviour
                      ?? Shader.Find("Unlit/Color")
                      ?? Shader.Find("Standard");
 
-        if (shader == null)
-        {
-            Debug.LogError("[AIRoomBox] Could not find any usable shader!");
-            return;
-        }
+        if (shader == null) { Debug.LogError("[AIRoomBox] No usable shader!"); return; }
 
         for (int i = 0; i < 6; i++)
         {
@@ -130,77 +92,113 @@ public class AIRoomBox : MonoBehaviour
             go.transform.localEulerAngles = rotations[i];
             go.transform.localScale       = scales[i];
 
-            // Remove unneeded collider
             var col = go.GetComponent<MeshCollider>();
             if (col != null) Destroy(col);
 
             var mat = new Material(shader);
-            mat.SetInt("_Cull", 0);   // double-sided — visible from inside
-
-            if (debugColors)
-            {
-                mat.SetColor("_BaseColor", DebugColors[i]);
-                mat.SetColor("_Color",     DebugColors[i]);
-            }
-            else
-            {
-                mat.SetColor("_BaseColor", Color.white);
-                mat.SetColor("_Color",     Color.white);
-            }
-
+            mat.SetInt("_Cull", 0);         // double-sided
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetColor("_Color",     Color.white);
             go.GetComponent<MeshRenderer>().material = mat;
             _faceObjects[i] = go;
-
-            Vector3 wp = go.transform.position;
-            Vector3 ws = go.transform.lossyScale;
-            Debug.Log($"[AIRoomBox] Built {FaceLabels[i]}  pos=({wp.x:F2},{wp.y:F2},{wp.z:F2})  scale=({ws.x:F2},{ws.y:F2},{ws.z:F2})");
         }
     }
 
-    // ── texturing ─────────────────────────────────────────────────────────────
+    // ── palette colors ────────────────────────────────────────────────────────
 
-    void LoadAllTextures()
+    /// Sets solid Material colors on all 6 faces from room_config.json palette.
+    public void ApplyPaletteColors()
     {
-        int loaded = 0;
+        var cfg = RoomConfigLoader.Instance;
+        if (cfg == null) return;
+
+        Color[] faceColors = {
+            cfg.WallColor,    // front
+            cfg.WallColor,    // back
+            cfg.WallColor,    // left
+            cfg.WallColor,    // right
+            cfg.FloorColor,   // floor
+            cfg.CeilingColor  // ceiling
+        };
+
         for (int i = 0; i < 6; i++)
         {
-            string path = Path.Combine(outputFolder, FaceFiles[i] + ".png");
-            var tex = LoadTexture(path);
-            if (tex == null)
-            {
-                Debug.LogWarning($"[AIRoomBox] Missing: {path}");
-                continue;
-            }
+            if (_faceObjects[i] == null) continue;
             var mat = _faceObjects[i].GetComponent<MeshRenderer>().material;
-            mat.mainTexture = tex;
-            mat.SetTexture("_BaseMap",  tex);   // URP Lit / Unlit
-            mat.SetTexture("_MainTex",  tex);   // Built-in
-            loaded++;
+            mat.mainTexture = null;
+            mat.SetTexture("_BaseMap", null);
+            mat.SetTexture("_MainTex",  null);
+            mat.SetColor("_BaseColor", faceColors[i]);
+            mat.SetColor("_Color",     faceColors[i]);
         }
-        Debug.Log($"[AIRoomBox] Textures loaded: {loaded}/6");
+
+        Debug.Log($"[AIRoomBox] Colors applied — wall:{RoomConfigLoader.ColorToHex(cfg.WallColor)} " +
+                  $"floor:{RoomConfigLoader.ColorToHex(cfg.FloorColor)} " +
+                  $"ceiling:{RoomConfigLoader.ColorToHex(cfg.CeilingColor)}");
     }
 
-    static Texture2D LoadTexture(string path)
-    {
-        if (!File.Exists(path)) return null;
-        byte[] data = File.ReadAllBytes(path);
-        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-        tex.LoadImage(data);
-        return tex;
-    }
+    // ── edge lines ────────────────────────────────────────────────────────────
 
-    void StartWatcher()
+    /// Builds thin black cube strips along all 12 room edges.
+    /// Uses Cube primitives (not LineRenderer) so they're visible from any camera angle.
+    void BuildEdgeLines()
     {
-        if (!Directory.Exists(outputFolder))
-        {
-            Debug.LogWarning($"[AIRoomBox] Output folder not found: {outputFolder}");
-            return;
-        }
-        _watcher = new FileSystemWatcher(outputFolder, "wall_front.png")
-        {
-            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+        float hf = floorSize  / 2f;
+        float hw = wallHeight / 2f;
+
+        // 8 corner points
+        Vector3 ftl = new Vector3(-hf,  hw,  hf);  // front-top-left
+        Vector3 ftr = new Vector3( hf,  hw,  hf);  // front-top-right
+        Vector3 fbl = new Vector3(-hf, -hw,  hf);  // front-bottom-left
+        Vector3 fbr = new Vector3( hf, -hw,  hf);  // front-bottom-right
+        Vector3 btl = new Vector3(-hf,  hw, -hf);  // back-top-left
+        Vector3 btr = new Vector3( hf,  hw, -hf);  // back-top-right
+        Vector3 bbl = new Vector3(-hf, -hw, -hf);  // back-bottom-left
+        Vector3 bbr = new Vector3( hf, -hw, -hf);  // back-bottom-right
+
+        // 12 edges of a box
+        Vector3[][] edges = {
+            // 4 vertical corner edges
+            new[] { fbl, ftl }, new[] { fbr, ftr },
+            new[] { bbl, btl }, new[] { bbr, btr },
+            // 4 top edges (wall-ceiling seams)
+            new[] { ftl, ftr }, new[] { btl, btr },
+            new[] { ftl, btl }, new[] { ftr, btr },
+            // 4 bottom edges (wall-floor seams)
+            new[] { fbl, fbr }, new[] { bbl, bbr },
+            new[] { fbl, bbl }, new[] { fbr, bbr },
         };
-        _watcher.Changed += (s, e) => _pendingUpdate = true;
-        _watcher.EnableRaisingEvents = true;
+
+        foreach (var edge in edges)
+            MakeEdgeCube(edge[0], edge[1]);
+    }
+
+    /// Creates a thin black cube between two points in local space.
+    void MakeEdgeCube(Vector3 a, Vector3 b)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = "EdgeLine";
+        go.transform.SetParent(transform, false);
+
+        Vector3 dir    = b - a;
+        float   length = dir.magnitude;
+
+        go.transform.localPosition = (a + b) * 0.5f;
+        // Align Y-axis of cube to the edge direction
+        go.transform.localRotation = Quaternion.FromToRotation(Vector3.up, dir.normalized);
+        go.transform.localScale    = new Vector3(edgeLineWidth, length, edgeLineWidth);
+
+        // Remove collider
+        var col = go.GetComponent<BoxCollider>();
+        if (col != null) Destroy(col);
+
+        // Black unlit material
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
+                     ?? Shader.Find("Unlit/Color")
+                     ?? Shader.Find("Standard");
+        var mat = new Material(shader);
+        mat.SetColor("_BaseColor", Color.black);
+        mat.SetColor("_Color",     Color.black);
+        go.GetComponent<MeshRenderer>().material = mat;
     }
 }
